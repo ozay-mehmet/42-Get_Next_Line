@@ -11,58 +11,136 @@
 /* ************************************************************************** */
 
 #include "get_next_line.h"
+#include <unistd.h>
 
-char	*ft_trim(char *str)
+static char	*ft_seperate_line(char *stash)
 {
 	char	*newstr;
+	int		i;
+	int		j;
 
-	newstr = (char *) malloc (sizeof(char));
-	if (!str)
+	if (!stash)
 		return (NULL);
-	while (*str != '\n')
-		*(newstr)++ = *(str)++;
-	*newstr = '\0';
+	i = 0;
+	while (stash[i] != '\0' && stash[i] != '\n')
+		i++;
+	newstr = (char *) malloc (i + 1);
+	if (!newstr)
+		return (NULL);
+	j = 0;
+	while (j < i)
+	{
+		newstr[j] = stash[j];
+		j++;
+	}
+	newstr[i] = '\0';
 	return (newstr);
 }
 
-char	*ft_read(int fd, char *str)
+static char	*ft_read(int fd, char *stash)
 {
-	char	*newstr;
+	char	*buffer;
 	int		result;
+	char	*temp;
 
-	result = 0;
-	newstr = (char *) malloc (BUFFER_SIZE + 1);
-	if (!newstr)
+	if (!stash)
+	{
+		stash = (char *) malloc (1);
+		if (!stash)
+			return (NULL);
+		stash[0] = '\0';
+	}
+	buffer = (char *) malloc (BUFFER_SIZE + 1);
+	if (!buffer)
 		return (NULL);
-	while (!ft_strchr(str, '\n') && str)
-	{	
-		result = read(fd, newstr, BUFFER_SIZE);
-		if (result == 0)
-			break ;
-		else if (result == -1)
+	result = 1;
+	while (!ft_strchr(stash, '\n') && result > 0)
+	{
+		result = read(fd, buffer, BUFFER_SIZE);
+		if (result == -1)
 		{
-			free(newstr);
-			free(str);
-			str = NULL;
+			free(buffer);
+			free(stash);
 			return (NULL);
 		}
-		else if (result)
-			newstr[result] = '\0';
-		newstr = ft_strjoin(str, newstr);
+		if (result > 0)
+		{
+			buffer[result] = '\0';
+			temp = ft_strjoin(stash, buffer);
+			if (!temp)
+			{
+				free(buffer);
+				return (stash);
+			}
+			free(stash);
+			stash = temp;
+		}
 	}
-	return (newstr);
+	free(buffer);
+	return (stash);
+}
+
+static char	*ft_update_stash(char *stash)
+{
+	int		i;
+	int		j;
+	char	*newstash;
+
+	if (!stash)
+		return (NULL);
+	i = 0;
+	while (stash[i] != '\0' && stash[i] != '\n')
+		i++;
+	if (stash[i] == '\0')
+	{
+		free(stash);
+		return (NULL);
+	}
+	i++;
+	newstash = (char *) malloc (ft_strlen(stash + i) + 1);
+	if (!newstash)
+		return (NULL);
+	j = 0;
+	while (stash[i + j] != '\0')
+	{
+		newstash[j] = stash[i + j];
+		j++;
+	}
+	newstash[j] = '\0';
+	free(stash);
+	return (newstash);
 }
 
 char	*get_next_line(int fd)
 {
-	static char	*str;
+	static char	*stash;
 	char		*line;
 
-	if ((fd < 0) || (BUFFER_SIZE < 0) || (read(fd, NULL, 0) < 0))
+	if (fd < 0)
 		return (NULL);
-	str = ft_read(fd, str);
-	if (!str)
+	stash = ft_read(fd, stash);
+	if (!stash)
 		return (NULL);
-	line = ft_trim(str);
+	line = ft_seperate_line(stash);
+	stash = ft_update_stash(stash);
 	return (line);
+}
+
+#include <stdio.h>
+#include <fcntl.h>
+int main(){
+	int fd = open("dosya.txt", O_RDONLY);
+	char *line1 = get_next_line(fd);
+	char *line2 = get_next_line(fd);
+	char *line3 = get_next_line(fd);
+	
+	printf("%s\n", line1);
+	printf("%s\n", line2);
+	printf("%s\n", line3);
+	
+	free(line1);
+	free(line2);
+	free(line3);
+	close(fd);
+	return (0);
 }
