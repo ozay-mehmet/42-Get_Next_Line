@@ -21,7 +21,8 @@
 
 char	*get_next_line(int fd);
 size_t	ft_strlen(const char *str);
+char	*ft_strdup(const char *s);
 char	*ft_strchr(const char *str, int c);
-char	*ft_strjoin(char const *s1, char const *s2);
+char	*ft_strjoin(char *s1, char const *s2);
 
 #endif
