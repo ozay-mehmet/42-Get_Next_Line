@@ -79,7 +79,10 @@ static char	*ft_update_stash(char *stash)
 	while (stash[i] && stash[i] != '\n')
 		i++;
 	if (!stash[i])
-		return (free(stash), NULL);
+	{
+		free(stash);
+		return (NULL);
+	}
 	new = malloc(ft_strlen(stash + i + 1) + 1);
 	if (!new)
 		return (NULL);
